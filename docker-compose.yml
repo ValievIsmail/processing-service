@@ -1,0 +1,14 @@
+version: "3"
+services:
+  db:
+    image: "postgres:11"
+    container_name: "processingdb"
+    environment:
+      - POSTGRES_DB=processingdb
+      - POSTGRES_USER=postgres
+    restart: unless-stopped
+    ports:
+      - "54320:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./db-data:/var/lib/postgresql/data
