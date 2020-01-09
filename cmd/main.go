@@ -102,11 +102,11 @@ func main() {
 func createDB(connectStr string, connLife time.Duration, maxIdle, poolSize int) (db *sql.DB, err error) {
 	db, err = sql.Open("postgres", connectStr)
 	if err != nil {
-		log.Fatalf("opening DB connection: %v", err)
+		return nil, err
 	}
 
 	if err = db.Ping(); err != nil {
-		log.Fatalf("establishing DB connection; %v", err)
+		return nil, err
 	}
 
 	db.SetMaxOpenConns(poolSize)
