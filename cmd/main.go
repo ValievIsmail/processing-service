@@ -26,11 +26,8 @@ func main() {
 
 	db, err := createDB(connectStr, config.DB.ConnLifetime, config.DB.MaxIdleConns, config.DB.PoolSize)
 	if err != nil {
-		log.Errorf("opening connection: %v", err)
+		log.Fatalf("opening db connection: %v", err)
 	}
-	log.RegisterExitHandler(func() {
-		db.Close()
-	})
 
 	handler, err := createHTTPHandler(db)
 	if err != nil {
