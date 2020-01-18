@@ -1,0 +1,3 @@
+CREATE SCHEMA api;
+
+ALTER SCHEMA api OWNER TO postgres;
