@@ -1,7 +1,20 @@
 ### Processing-service
 
-1. Start database with generate tables, functions and data
-make up-db
+Service for working with transactions with implementations of logic on the database side
 
-2. Start service
-make go
+To work, you need to install docker-compose
+
+1. Run the database with the command 'make up-db' 
+
+2. Start the service with the command 'make go'
+
+### Requests:
+
+1. Send Transaction - POST http://localhost:8080/v1/process BODY
+```
+{
+	"amount": 15,
+	"state": "lost",
+	"transaction_id": 123
+}
+```

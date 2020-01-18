@@ -9,7 +9,7 @@ import (
 // Config struct
 type Config struct {
 	API struct {
-		Port           string        `default:":8090"`
+		Port           string        `default:":8080"`
 		ReadTimeout    time.Duration `default:"5s"`
 		WriteTimeout   time.Duration `default:"5s"`
 		ProccesingTime time.Duration `default:"10m"`
