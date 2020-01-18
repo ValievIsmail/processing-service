@@ -2,13 +2,16 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/processing-service/config"
+	"github.com/processing-service/db"
+	"github.com/processing-service/handler"
 
 	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
@@ -17,19 +20,19 @@ import (
 const appName = "processing-service"
 
 func main() {
-	config, err := parseConfig(appName)
+	config, err := config.ParseConfig(appName)
 	if err != nil {
 		log.Fatalf("parsing config; %v", err)
 	}
 
 	connectStr := fmt.Sprintf(config.DB.Tmpl, config.DB.Host, config.DB.Port, config.DB.Name, config.DB.User, appName)
 
-	db, err := createDB(connectStr, config.DB.ConnLifetime, config.DB.MaxIdleConns, config.DB.PoolSize)
+	dbConn, err := db.CreateDB(connectStr, config.DB.ConnLifetime, config.DB.MaxIdleConns, config.DB.PoolSize)
 	if err != nil {
 		log.Fatalf("opening db connection: %v", err)
 	}
 
-	handler, err := createHTTPHandler(db)
+	h, err := handler.CreateHTTPHandler(dbConn)
 	if err != nil {
 		log.Fatalf("creating http handler: %v", err)
 	}
@@ -39,7 +42,7 @@ func main() {
 		Addr:         config.API.Port,
 		ReadTimeout:  config.API.ReadTimeout,
 		WriteTimeout: config.API.WriteTimeout,
-		Handler:      handler,
+		Handler:      h,
 	}
 
 	go func() {
@@ -52,9 +55,9 @@ func main() {
 		for {
 			select {
 			case <-time.After(config.API.ProccesingTime):
-				lastTransactions, err := dbGetLastOddRecords(db)
+				lastTransactions, err := db.GetLastOddRecords(dbConn)
 				if err != nil {
-					log.Errorf("dbGetLastOddRecords: %v", err)
+					log.Errorf("GetLastOddRecords: %v", err)
 					continue
 				}
 
@@ -65,7 +68,7 @@ func main() {
 				for _, t := range lastTransactions {
 					log.Println("TRANSACTION", t)
 
-					if err := dbPostProccessing(t, db); err != nil {
+					if err := db.PostProccessing(t, dbConn); err != nil {
 						log.Errorf("dbStateProccessing post processing with id %d: %v", t.ID, err)
 						continue
 					}
@@ -94,21 +97,4 @@ func main() {
 		log.Println("STOP APP")
 		log.Exit(0)
 	}
-}
-
-func createDB(connectStr string, connLife time.Duration, maxIdle, poolSize int) (db *sql.DB, err error) {
-	db, err = sql.Open("postgres", connectStr)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = db.Ping(); err != nil {
-		return nil, err
-	}
-
-	db.SetMaxOpenConns(poolSize)
-	db.SetMaxIdleConns(maxIdle)
-	db.SetConnMaxLifetime(connLife)
-
-	return db, nil
 }
